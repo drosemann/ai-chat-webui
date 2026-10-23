@@ -94,3 +94,23 @@ Still open after Phase 4:
 
 - Home, Memory, Models, and Settings views are placeholders.
 - Rail is hidden until Phase 5.
+
+## Phase 5 — Home dashboard
+
+Delivered:
+
+- `home.js`: greeting with display name and live counts, three summary
+  cards (open / done today / needs input), "Your day, handled" feed
+  (needs-input with Review/Not-now, running generation, coming up), home
+  composer that starts a chat from a typed prompt, and quick-prompt chips.
+  Sections with no data are hidden; the all-empty state links to tasks/chat.
+- Right rail on Home and Chat: today's checkboxes, next deadline, recently
+  completed.
+- `?demo=1` loads clearly labelled demo rows as the signed-in user;
+  `clearDemo()` (wired in Settings, Phase 6) removes every `Demo:` row.
+- `bootstrap.js`: picks up Home handoffs via `pendingPrompt`, exposes
+  `ChatView.isBusy` for the "running" feed card.
+
+Still open after Phase 5:
+
+- Memory, Models, and Settings views are placeholders.

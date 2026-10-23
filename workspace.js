@@ -7,6 +7,7 @@ import * as data from './data.js';
 import { escapeHtml, truncate, toast } from './utils.js';
 import { renderTasks } from './tasks.js';
 import { renderProjects } from './projects.js';
+import { renderHome, renderRail } from './home.js';
 
 // Phase 3 loads the workspace stylesheet dynamically so index.html stays
 // untouched; the <link> will move into <head> in the Phase 8 cleanup.
@@ -177,13 +178,24 @@ export async function render() {
   });
   for (const name of VIEW_NAMES) views[name].hidden = name !== view;
 
+  const rail = document.getElementById('rail');
+  const railVisible = view === 'home' || view === 'chat';
+  if (rail) rail.hidden = !railVisible;
+  if (rail && railVisible) {
+    try {
+      await renderRail(rail);
+    } catch (error) {
+      console.error('Rail render failed:', error);
+    }
+  }
+
   try {
     if (view === 'chat') {
       if (window.ChatView?.mountChat) {
         await window.ChatView.mountChat(views.chat, { conversationId: param });
       }
     } else if (view === 'home') {
-      views.home.innerHTML = placeholderView('Home', 5, 'Your day at a glance: open tasks, what needs input, and what is coming up.');
+      await renderHome(views.home);
     } else if (view === 'projects') {
       await renderProjects(views.projects, param);
     } else if (view === 'tasks') {

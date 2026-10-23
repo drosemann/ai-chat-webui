@@ -210,6 +210,15 @@ async function mountChat(_root, { conversationId }) {
 
     if (!conversationId) {
         setWelcomeVisible(true);
+        const pending = sessionStorage.getItem('pendingPrompt');
+        if (pending) {
+            sessionStorage.removeItem('pendingPrompt');
+            const { chatInput } = getEls();
+            if (chatInput) {
+                chatInput.value = pending;
+                sendMessage();
+            }
+        }
         return;
     }
     try {
@@ -217,6 +226,15 @@ async function mountChat(_root, { conversationId }) {
         setWelcomeVisible(messages.length === 0);
         for (const m of messages) {
             renderMessage(m.content, m.role === 'user', m.created_at ? new Date(m.created_at).toLocaleTimeString() : null);
+        }
+        const pending = sessionStorage.getItem('pendingPrompt');
+        if (pending && messages.length === 0) {
+            sessionStorage.removeItem('pendingPrompt');
+            const { chatInput } = getEls();
+            if (chatInput) {
+                chatInput.value = pending;
+                sendMessage();
+            }
         }
     } catch (error) {
         console.error('Failed to load conversation:', error);
@@ -415,7 +433,7 @@ function resetChat() {
     }
 }
 
-window.ChatView = { mountChat, reset: resetChat };
+window.ChatView = { mountChat, reset: resetChat, isBusy: () => isProcessing };
 initTheme();
 initComposer();
 initWorkspace();
