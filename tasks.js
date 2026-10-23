@@ -124,5 +124,5 @@ export async function renderTasks(root) {
     } catch (error) {
       toast(error?.message || 'Task update failed.');
     }
-  }, { once: true });
+  });
 }

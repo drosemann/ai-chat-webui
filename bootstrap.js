@@ -468,4 +468,3 @@ window.ChatView = { mountChat, reset: resetChat, isBusy: () => isProcessing };
 initTheme();
 initComposer();
 initWorkspace();
-console.log('Chat interface initialized');

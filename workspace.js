@@ -12,13 +12,13 @@ import { renderMemory } from './memory.js';
 import { renderModels } from './models.js';
 import { renderSettings } from './settings.js';
 
-// Phase 3 loads the workspace stylesheet dynamically so index.html stays
-// untouched; the <link> will move into <head> in the Phase 8 cleanup.
-if (!document.querySelector('link[data-workspace-styles]')) {
+// styles.css is injected here so index.html — including its long-standing
+// inline <style> block — stays byte-identical. Any existing styles.css link
+// (e.g. added later to <head>) is respected and never duplicated.
+if (!document.querySelector('link[href="styles.css"]')) {
   const link = document.createElement('link');
   link.rel = 'stylesheet';
   link.href = 'styles.css';
-  link.dataset.workspaceStyles = 'true';
   document.head.appendChild(link);
 }
 
@@ -160,15 +160,6 @@ function parseRoute() {
     return { view: '__auth', param: null };
   }
   return { view: 'home', param: null };
-}
-
-function placeholderView(title, phase, blurb) {
-  return `
-    <div class="view-head"><h1>${escapeHtml(title)}</h1></div>
-    <div class="empty-state">
-      <p>${escapeHtml(blurb)}</p>
-      <p class="muted">Arrives in Phase ${phase}.</p>
-    </div>`;
 }
 
 export async function render() {

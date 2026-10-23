@@ -162,3 +162,24 @@ Explicitly not done (needs a live deployment, out of scope for this
 session): executing the RLS proof, the backup-restore drill, and the SMTP
 end-to-end check. They are checklist items in `docs/RLS_PROOF.md` and
 `supabase/README.md`.
+
+## Phase 8 — Final documentation and cleanup
+
+Delivered:
+
+- `README.md`: corrected run story (`npm start` is the only supported path;
+  opening `index.html` directly no longer works for chat), prerequisites,
+  architecture, configuration reference, and honest non-goals.
+- `.env.example`: now documents every variable `server.js` reads (`PORT`,
+  `OLLAMA_*`, `SUPABASE_*`, `ALLOWED_ORIGIN`, `SITE_URL`, `APP_PUBLIC_URL`,
+  `NODE_ENV`).
+- Cleanup: removed the dead `placeholderView` helper, dropped the unused
+  `SYSTEM_PROMPT` decision record (content filtering stays in `checkSpam`),
+  removed chatty `console.log` calls (errors still log), and finalized the
+  `styles.css` injection comment (`index.html` stays byte-identical by
+  design).
+- The `?demo=1` fixture path is documented in Settings and removes all
+  `Demo:` rows in one click.
+
+All 8 phases are implemented. Push of the 8 commits is blocked only by
+missing GitHub credentials in this environment (see final report).

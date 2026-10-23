@@ -1,22 +1,26 @@
 AI Chat WebUI – Lokal & Privat
 
-> Blitzschnelles, privacy-fokussiertes Chat-Interface für Ollama – alles läuft lokal, nichts geht in die Cloud.
+> Privacy-fokussiertes Chat-Interface für Ollama mit Workspace: Projekte,
+> Tasks, Memory und mehrere Chats – mit Benutzerkonten auf selbst-gehostetem
+> Supabase. Kein Framework, pure JS.
 
 Ursprung am 14.03.2025 – first commit `bc38708` mit nur 3 Dateien, hieß noch `super-fast-ai-chat`. Nur `README.md`, `index.html`, `index.js`.
 
 ### Entstehung
 
-Früher war mein Mindset: "Lieber meinen $5 VPS auf 100% CPU ballern als ein paar Cent an einen Inference Provider zu zahlen". Heute sehe ich es anders: Ich würde das meiste in der Cloud machen und nur für wirklich private Dinge lokale 4B Modelle nutzen – statt teuren VPS dauerhaft zu quälen.
+Früher war mein Mindset: "Lieber meinen $5 VPS auf 100% CPU ballen als ein paar Cent an einen Inference Provider zu zahlen". Heute sehe ich es anders: Ich würde das meiste in der Cloud machen und nur für wirklich private Dinge lokale 4B Modelle nutzen – statt teuren VPS dauerhaft zu quälen.
 
-Genau dafür ist dieses Projekt: Kein Framework, pure JS, einfach `index.html` öffnen und lokal chatten.
+Genau dafür ist dieses Projekt: Kein Framework, pure JS, lokal chatten – inzwischen als Workspace mit Konten, damit Chats, Projekte und Tasks geräteübergreifend erhalten bleiben.
 
 ## Features
 
 - 🚄 **Ultra-schnell** – lokale Antworten ohne Cloud Latenz
-- 🔒 **Privacy First** – alle Chats bleiben auf deiner Maschine
-- 💻 **Lokale Modelle** – via Ollama
-- 🎨 **Modernes UI** – clean, responsive, mit Streaming
-- 🔧 **Einfach konfigurierbar** – API URL ändern fertig
+- 🔒 **Privacy First** – Backend und Auth laufen auf deiner Infrastruktur
+- 💻 **Lokale Modelle** – via Ollama, Modell frei wählbar
+- 🗂️ **Workspace** – Home-Dashboard, Projekte, Tasks, Memory, mehrere Chats
+- 👤 **Benutzerkonten** – Registrierung, Login, Passwort-Reset via selbst-gehostetem Supabase Auth
+- 🎨 **Modernes UI** – clean, responsive, mit Streaming-fähiger Architektur
+- 🔧 **Einfach konfigurierbar** – via `.env`, kein Build nötig
 
 ## Schnellstart
 
@@ -28,18 +32,33 @@ ollama pull qwen2.5:0.5b
 # oder für private Tasks heute eher:
 ollama pull gemma3:4b
 ```
+- [Docker + Docker Compose](https://docs.docker.com/compose/install/) für das Supabase-Backend
+- Einen SMTP-Zugang für Bestätigungs- und Reset-Mails (oder `GOTRUE_MAILER_AUTOCONFIRM=true` nur für lokale Entwicklung)
 
-### 2) Installation
+### 2) Backend starten
 ```bash
-git clone https://github.com/drosemann/ai-chat-webui
-cd ai-chat-webui
+cp supabase/.env.example supabase/.env
+# Secrets in supabase/.env ersetzen!
+docker compose --env-file supabase/.env -f supabase/docker-compose.yml up -d db auth rest gateway
+docker compose --env-file supabase/.env -f supabase/docker-compose.yml exec db \
+  psql -U postgres -d postgres -f /migrations/0001_workspace.sql
 ```
 
-### 3) Nutzung
-- `index.html` im Browser öffnen
-- Loschatten
+Details, Backup/Restore und Produktion (Reverse Proxy, TLS): siehe [`supabase/README.md`](supabase/README.md).
 
-Kein Build, kein npm, kein Docker nötig.
+### 3) App starten
+```bash
+cp .env.example .env
+# SUPABASE_URL, SUPABASE_ANON_KEY und SUPABASE_JWT_SECRET eintragen
+npm install
+npm start
+```
+
+Browser öffnen: `http://localhost:3000` – Konto erstellen, loschatten.
+
+> Hinweis: `index.html` direkt zu öffnen funktioniert nicht mehr für den Chat,
+> da die App Session-Tokens an `/api/generate` sendet. `npm start` ist der
+> einzige unterstützte Startweg.
 
 ## Warum heute noch relevant?
 
@@ -53,25 +72,29 @@ Für den Rest: Cloud. Günstiger und schneller.
 
 ## Tech Stack
 
-- Pure JavaScript (kein Framework)
+- Pure JavaScript (kein Framework, kein Build)
 - Modernes CSS mit Custom Properties
 - Async/Await + Ollama API
-- Responsive Design
+- Responsive Design mit Hash-Routing
+- Backend: Express (statisch + Ollama-Proxy mit JWT-Prüfung)
+- Daten & Auth: selbst-gehostetes Supabase (Postgres + GoTrue + PostgREST + Caddy-Gateway), Row Level Security pro Benutzer
 - Ollama API: `http://localhost:11434/api/generate`
 
-## Workspace-Backend (Phasen 1–7)
+## Workspace-Status
 
-Der Chat wird zu einem Workspace mit Benutzerkonten umgebaut. Die dafür
-benötigte selbst-gehostete Supabase-Infrastruktur liegt unter
-[`supabase/`](supabase/README.md); das Schema und der Phasenstatus stehen in
-[`docs/WORKSPACE.md`](docs/WORKSPACE.md).
+Alle 8 Phasen sind umgesetzt: [`docs/WORKSPACE.md`](docs/WORKSPACE.md) beschreibt, was jede Phase geliefert hat. Sicherheits-Checks für Betreiber (u. a. Zwei-Benutzer-RLS-Nachweis): [`docs/RLS_PROOF.md`](docs/RLS_PROOF.md).
+
+Bewusst nicht enthalten: Cloud-Auth (Clerk/WorkOS), eigenes Passwort-Hashing, Prompt-Policing (dein Modell, deine Entscheidung), Kalender-/Mail-Integrationen.
 
 ## Konfiguration
 
-Im Settings Panel:
+App (`.env`):
 
-- Ollama API URL (default `http://localhost:11434/api/generate`)
-- Modell wechseln
+- `PORT`, `OLLAMA_API_URL`, `OLLAMA_MODEL` (Fallback-Modell)
+- `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_JWT_SECRET` (identisch zu `JWT_SECRET` im Stack)
+- `ALLOWED_ORIGIN`, optional `SITE_URL`/`APP_PUBLIC_URL`, `NODE_ENV`
+
+Im UI (Settings): Anzeigename, Theme, Standard-Modell, Datenexport, Demo-Daten bereinigen, alle eigenen Daten löschen.
 
 ## Lizenz
 
