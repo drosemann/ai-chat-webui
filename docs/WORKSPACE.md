@@ -140,3 +140,25 @@ Still open after Phase 6:
 
 - Operator hardening (reverse proxy, backups drill, RLS proof) and final
   documentation.
+
+## Phase 7 — Hardening and operator readiness
+
+Delivered:
+
+- `server.js`: CORS is now an exact-match allowlist (`ALLOWED_ORIGIN` plus
+  optional `SITE_URL`/`APP_PUBLIC_URL`); unknown origins get no ACAO header
+  and `*` is never used. Boot warns loudly when Supabase is unconfigured or
+  when production still allowlists a localhost origin. No prompt content is
+  logged; `/api/models` leaks only "Ollama is unreachable".
+- `docs/RLS_PROOF.md`: the four-gate proof (anonymous access, two-user
+  isolation, authenticated API surface, no service-role in browser code) —
+  written to be run by a reviewer/operator, since this session runs nothing.
+- `supabase/README.md`: reverse-proxy example (Caddy, two HTTPS endpoints,
+  everything else localhost-bound), Auth-user removal procedure, rate-limit
+  responsibility.
+- `.env.example`: documents the optional CORS origins.
+
+Explicitly not done (needs a live deployment, out of scope for this
+session): executing the RLS proof, the backup-restore drill, and the SMTP
+end-to-end check. They are checklist items in `docs/RLS_PROOF.md` and
+`supabase/README.md`.

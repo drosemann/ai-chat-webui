@@ -68,7 +68,36 @@ docker compose --env-file supabase/.env -f supabase/docker-compose.yml exec -T d
 docker compose --env-file supabase/.env -f supabase/docker-compose.yml up -d auth rest gateway
 ```
 
-## 5. Production notes
+## 5. Reverse proxy (production)
+
+Expose only two HTTPS endpoints: the app and the gateway's public URL.
+Database, Auth-direct, and PostgREST-direct ports stay bound to localhost.
+Example Caddy configuration on the same host:
+
+```caddy
+app.example.com {
+    reverse_proxy 127.0.0.1:3000
+}
+
+api.example.com {
+    reverse_proxy 127.0.0.1:8000
+}
+```
+
+Set `SUPABASE_PUBLIC_URL=https://api.example.com`,
+`API_EXTERNAL_URL=https://api.example.com/auth/v1`, and
+`SITE_URL=https://app.example.com` in `supabase/.env`, and add the public
+app URL to the app's `ALLOWED_ORIGIN`/`APP_PUBLIC_URL` (see root
+`.env.example`). Apply rate limiting at this layer.
+
+## 6. Removing a login (account deletion)
+
+"Delete all my data" in Settings removes every row the user owns. The
+Supabase Auth user itself is removed by the operator in Studio
+(Authentication → Users → Delete user) or via the Auth admin API with the
+service-role key — that key is never placed in app code or the app `.env`.
+
+## 7. Production notes
 
 - Keep all component ports bound to localhost and terminate TLS in a reverse
   proxy. Expose only the app and the gateway's public URL.

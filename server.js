@@ -64,9 +64,13 @@ app.use(express.json());
 
 const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || `http://localhost:${process.env.PORT || 3000}`;
 
+const allowedOrigins = [ALLOWED_ORIGIN, process.env.SITE_URL, process.env.APP_PUBLIC_URL].filter(Boolean);
+
 app.use((req, res, next) => {
     const requestOrigin = req.headers.origin;
-    if (requestOrigin && requestOrigin === ALLOWED_ORIGIN) {
+    // Exact-match allowlist only. Unknown origins get no ACAO header, so
+    // browsers will not expose responses cross-origin. Never use "*".
+    if (requestOrigin && allowedOrigins.includes(requestOrigin)) {
         res.header('Access-Control-Allow-Origin', requestOrigin);
         res.header('Vary', 'Origin');
     }
@@ -214,6 +218,14 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 3000;
+
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !SUPABASE_JWT_SECRET) {
+    console.warn('[security] Supabase is not fully configured (SUPABASE_URL / SUPABASE_ANON_KEY / SUPABASE_JWT_SECRET). /api/* will reject all requests until it is.');
+}
+if (process.env.NODE_ENV === 'production' && allowedOrigins.some((o) => o.startsWith('http://localhost') || o.startsWith('http://127.'))) {
+    console.warn('[security] NODE_ENV=production but a localhost origin is allowlisted for CORS. Serve over HTTPS and allowlist the public URL only.');
+}
+
 app.listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}`);
     console.log('Environment:', {
