@@ -44,3 +44,33 @@ Still open after Phase 2:
   land in Phases 3–5.
 - No two-user RLS proof has been run yet (user asked for no test runs);
   reviewers must run it before trusting multi-user data.
+
+## Phase 3 — Workspace shell and persistent chat
+
+Delivered:
+
+- `workspace.js`: builds the shell (sidebar with nav, pinned chats, today
+  list, user chip, sign-out; content column with topbar and view root; right
+  rail placeholder), hash router (`#/home`, `#/chat`, `#/chat/:id`,
+  `#/projects`, `#/tasks`, `#/memory`, `#/models`, `#/settings`), and
+  sidebar refresh from real Supabase data. Non-chat views show honest
+  placeholders naming their phase.
+- `app.js` is now a tiny classic entry point (the existing
+  `<script src="app.js">` tag still works); all logic moved to
+  `bootstrap.js`, which persists conversations/messages via `data.js`,
+  restores them on reload and deep link, adds a working Send button, a chat
+  toolbar (new/pin/rename/delete), and resets chat state on account change.
+- `data.js`: the single data-access layer (profiles, settings,
+  conversations, messages, projects, tasks, memories + task selectors).
+- `utils.js`: shared escaping, truncation, date helpers, toasts.
+- `styles.css`: auth, shell, sidebar, rail, view, and toast styles, loaded
+  dynamically so `index.html` stays byte-identical for now.
+- `auth.js`: session gate now toggles the shell and notifies the workspace.
+- Chat sends the stored history (last 20 messages, unmodified) plus the
+  user's configured default model; prompt content is never policed or
+  rewritten by the app.
+
+Still open after Phase 3:
+
+- Home, Projects, Tasks, Memory, Models, and Settings views are placeholders.
+- Rail is hidden until Phase 5. Theme syncs to the server in Phase 6.

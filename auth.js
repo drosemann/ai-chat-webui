@@ -24,9 +24,19 @@ function ensureOverlay() {
 }
 
 function setAppVisible(visible) {
-  document.querySelectorAll('header, main').forEach((el) => {
-    el.hidden = !visible;
-  });
+  // Phase 3: the workspace shell owns visibility. Before the shell exists
+  // (very first load), fall back to hiding the legacy header/main nodes.
+  const shell = document.getElementById('shell');
+  if (shell) {
+    shell.hidden = !visible;
+  } else {
+    document.querySelectorAll('header, main').forEach((el) => {
+      el.hidden = !visible;
+    });
+  }
+  if (window.Workspace?.setSignedIn) {
+    window.Workspace.setSignedIn(visible);
+  }
 }
 
 function showError(overlay, message) {
