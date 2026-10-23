@@ -5,6 +5,8 @@
 import { getSupabaseClient, onAuthChange } from './supabaseClient.js';
 import * as data from './data.js';
 import { escapeHtml, truncate, toast } from './utils.js';
+import { renderTasks } from './tasks.js';
+import { renderProjects } from './projects.js';
 
 // Phase 3 loads the workspace stylesheet dynamically so index.html stays
 // untouched; the <link> will move into <head> in the Phase 8 cleanup.
@@ -73,6 +75,10 @@ function buildShell() {
       <a href="#/models" data-route="models">Models</a>
     </nav>
     <div class="side-section">
+      <h2>Projects</h2>
+      <div id="projects-list"><p class="side-empty">No projects yet.</p></div>
+    </div>
+    <div class="side-section">
       <h2>Pinned</h2>
       <div id="pinned-list"><p class="side-empty">Nothing pinned yet.</p></div>
     </div>
@@ -119,6 +125,7 @@ function buildShell() {
   if (main) main.remove();
 
   sidebarEls = {
+    projects: sidebar.querySelector('#projects-list'),
     pinned: sidebar.querySelector('#pinned-list'),
     today: sidebar.querySelector('#today-list'),
     userChip: sidebar.querySelector('#user-chip')
@@ -178,9 +185,9 @@ export async function render() {
     } else if (view === 'home') {
       views.home.innerHTML = placeholderView('Home', 5, 'Your day at a glance: open tasks, what needs input, and what is coming up.');
     } else if (view === 'projects') {
-      views.projects.innerHTML = placeholderView('Projects', 4, 'Group chats and tasks by project.');
+      await renderProjects(views.projects, param);
     } else if (view === 'tasks') {
-      views.tasks.innerHTML = placeholderView('Tasks', 4, 'Your task list lives here.');
+      await renderTasks(views.tasks);
     } else if (view === 'memory') {
       views.memory.innerHTML = placeholderView('Memory', 6, 'Notes the assistant should keep in mind.');
     } else if (view === 'models') {
@@ -199,11 +206,18 @@ export async function render() {
 export async function refreshSidebar() {
   if (!shellBuilt || !sidebarEls.pinned) return;
   try {
-    const [conversations, tasks, profile] = await Promise.all([
+    const [conversations, tasks, profile, projects] = await Promise.all([
       data.listConversations(50),
       data.listTasks({ status: 'open' }),
-      data.getProfile().catch(() => null)
+      data.getProfile().catch(() => null),
+      data.listProjects().catch(() => [])
     ]);
+
+    if (sidebarEls.projects) {
+      sidebarEls.projects.innerHTML = projects.length === 0
+        ? '<p class="side-empty">No projects yet.</p>'
+        : projects.slice(0, 8).map((p) => `<a class="side-item" href="#/projects/${escapeHtml(p.id)}">${escapeHtml(truncate(p.name, 40))}</a>`).join('');
+    }
 
     if (profile && sidebarEls.userChip) {
       sidebarEls.userChip.innerHTML = `<span class="avatar-sm">${escapeHtml((profile.display_name || '?').slice(0, 1).toUpperCase())}</span><span>${escapeHtml(profile.display_name || '')}</span>`;

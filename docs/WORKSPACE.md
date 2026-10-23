@@ -74,3 +74,23 @@ Still open after Phase 3:
 
 - Home, Projects, Tasks, Memory, Models, and Settings views are placeholders.
 - Rail is hidden until Phase 5. Theme syncs to the server in Phase 6.
+
+## Phase 4 — Projects and tasks
+
+Delivered:
+
+- `tasks.js`: task list with status/project filters, create form (title,
+  notes, due date, project, needs-input flag), checkbox complete, inline
+  edit via prompts (documented as MVP), delete with confirmation.
+- `projects.js`: project cards with live open-task and chat counts, detail
+  view with open/done tasks, linked chats, archive/unarchive, and delete
+  (tasks and chats are orphaned via `ON DELETE SET NULL`, never deleted).
+- `workspace.js`: sidebar gains a Projects section; `#/tasks` and
+  `#/projects` (list + `#/projects/:id` detail) routes render the real
+  views; every data change refreshes the sidebar.
+- `styles.css`: form, card, task-row, and project-card styles.
+
+Still open after Phase 4:
+
+- Home, Memory, Models, and Settings views are placeholders.
+- Rail is hidden until Phase 5.
