@@ -1,4 +1,4 @@
- AI Chat WebUI – Lokal & Privat
+AI Chat WebUI – Lokal & Privat
 
 > Blitzschnelles, privacy-fokussiertes Chat-Interface für Ollama – alles läuft lokal, nichts geht in die Cloud.
 
@@ -58,6 +58,13 @@ Für den Rest: Cloud. Günstiger und schneller.
 - Async/Await + Ollama API
 - Responsive Design
 - Ollama API: `http://localhost:11434/api/generate`
+
+## Workspace-Backend (Phase 1)
+
+Der Chat wird zu einem Workspace mit Benutzerkonten umgebaut. Die dafür
+benötigte selbst-gehostete Supabase-Infrastruktur liegt unter
+[`supabase/`](supabase/README.md); das Schema und der Phasenstatus stehen in
+[`docs/WORKSPACE.md`](docs/WORKSPACE.md).
 
 ## Konfiguration
 

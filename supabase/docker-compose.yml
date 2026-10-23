@@ -1,0 +1,93 @@
+name: ai-chat-webui-supabase
+
+services:
+  db:
+    image: ${POSTGRES_IMAGE:-supabase/postgres:15.8.1.085}
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in supabase/.env}
+    ports:
+      - "${BIND_ADDR:-127.0.0.1}:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./migrations:/migrations:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d $${POSTGRES_DB:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  auth:
+    image: ${GOTRUE_IMAGE:-supabase/gotrue:v2.197.0}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${BIND_ADDR:-127.0.0.1}:${GOTRUE_PORT:-9999}:9999"
+    environment:
+      GOTRUE_API_HOST: "0.0.0.0"
+      GOTRUE_API_PORT: "9999"
+      API_EXTERNAL_URL: ${API_EXTERNAL_URL:?Set API_EXTERNAL_URL, e.g. http://localhost:8000/auth/v1}
+      GOTRUE_SITE_URL: ${SITE_URL:?Set SITE_URL, e.g. http://localhost:3000}
+      GOTRUE_URI_ALLOW_LIST: ${SITE_URL}${APP_EXTRA_REDIRECT_URLS:+,${APP_EXTRA_REDIRECT_URLS}}
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-postgres}?search_path=auth,public&sslmode=disable
+      GOTRUE_JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in supabase/.env}
+      GOTRUE_JWT_EXP: ${GOTRUE_JWT_EXP:-3600}
+      GOTRUE_EXTERNAL_EMAIL_ENABLED: "true"
+      GOTRUE_EXTERNAL_PHONE_ENABLED: "false"
+      GOTRUE_MAILER_AUTOCONFIRM: ${GOTRUE_MAILER_AUTOCONFIRM:-false}
+      GOTRUE_SMTP_HOST: ${SMTP_HOST:-}
+      GOTRUE_SMTP_PORT: ${SMTP_PORT:-587}
+      GOTRUE_SMTP_USER: ${SMTP_USER:-}
+      GOTRUE_SMTP_PASS: ${SMTP_PASS:-}
+      GOTRUE_SMTP_ADMIN_EMAIL: ${SMTP_ADMIN_EMAIL:-}
+      GOTRUE_SMTP_SENDER_NAME: ${SMTP_SENDER_NAME:-AI Chat WebUI}
+      GOTRUE_SMTP_MAX_FREQUENCY: ${SMTP_MAX_FREQUENCY:-1s}
+      GOTRUE_MAILER_URLPATHS_INVITE: "/"
+      GOTRUE_MAILER_URLPATHS_CONFIRMATION: "/"
+      GOTRUE_MAILER_URLPATHS_RECOVERY: "/#/reset"
+      GOTRUE_MAILER_URLPATHS_EMAIL_CHANGE: "/"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9999/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  rest:
+    image: ${POSTGREST_IMAGE:-postgrest/postgrest:v12.2.3}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${BIND_ADDR:-127.0.0.1}:${POSTGREST_PORT:-3001}:3000"
+    environment:
+      PGRST_DB_URI: postgres://authenticator:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-postgres}
+      PGRST_DB_SCHEMAS: public
+      PGRST_DB_ANON_ROLE: anon
+      PGRST_JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in supabase/.env}
+      PGRST_JWT_ROLE_CLAIM_KEY: .role
+      PGRST_SERVER_PORT: "3000"
+
+  gateway:
+    image: ${GATEWAY_IMAGE:-caddy:2-alpine}
+    restart: unless-stopped
+    depends_on:
+      auth:
+        condition: service_healthy
+      rest:
+        condition: service_started
+    ports:
+      - "${BIND_ADDR:-127.0.0.1}:${SUPABASE_PORT:-8000}:8000"
+    volumes:
+      - ./gateway/Caddyfile:/etc/caddy/Caddyfile:ro
+      - gateway-data:/data
+      - gateway-config:/config
+
+volumes:
+  db-data:
+  gateway-data:
+  gateway-config:
