@@ -1,3 +1,10 @@
+// Session gate for the self-hosted workspace. auth.js hides the chat until
+// sign-in and exposes the access token on window.AppAuth; the chat below
+// attaches it to every /api/generate request.
+import('./auth.js').catch((error) => {
+    console.error('Auth module failed to load:', error);
+});
+
 document.addEventListener('DOMContentLoaded', () => {
     // Theme toggle functionality
     const themeToggle = document.getElementById('theme-toggle');
@@ -12,7 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
     themeToggle.addEventListener('click', () => {
         const currentTheme = document.documentElement.getAttribute('data-theme');
         const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-        
+
         document.documentElement.setAttribute('data-theme', newTheme);
         localStorage.setItem('theme', newTheme);
         modeText.textContent = newTheme === 'dark' ? 'Light Mode' : 'Dark Mode';
@@ -28,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const chatMessages = document.querySelector('.chat-messages');
     const chatInput = document.querySelector('.chat-input');
     const welcomeScreen = document.querySelector('.welcome-screen');
-    
+
     let isProcessing = false;
 
     console.log('Chat interface initialized');
@@ -136,7 +143,7 @@ function escapeHtml(value) {
 
         const message = document.createElement('div');
         message.className = `message ${isUser ? 'user-message' : ''}`;
-        
+
         const formattedContent = formatContent(content);
 
         message.innerHTML = `
@@ -196,7 +203,7 @@ function escapeHtml(value) {
         if (spamCheck.isSpam) {
             // Add a warning message
             const warningMessage = addMessage(`⚠️ Message blocked: Contains inappropriate or unsafe content.
-            
+
 Type: ${spamCheck.reason}
 
 Please ensure your message follows our content guidelines:
@@ -205,7 +212,7 @@ Please ensure your message follows our content guidelines:
 • No spam or advertising
 • No malicious content
 • No links or contact information`, false);
-            
+
             chatInput.value = '';
             chatInput.style.height = 'auto';
             return;
@@ -222,12 +229,18 @@ Please ensure your message follows our content guidelines:
 
         try {
             console.log('Sending request to server...');
-            
+
+            const headers = {
+                'Content-Type': 'application/json',
+            };
+            const accessToken = window.AppAuth?.getAccessToken?.();
+            if (accessToken) {
+                headers['Authorization'] = `Bearer ${accessToken}`;
+            }
+
             const response = await fetch('/api/generate', { // Changed to use relative URL
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers,
                 body: JSON.stringify({
                     prompt: message
                 })
@@ -258,9 +271,9 @@ Please ensure your message follows our content guidelines:
                 stack: error.stack,
                 timestamp: new Date().toISOString()
             });
-            
+
             let errorMessage = '⚠️ Error: ';
-            
+
             if (error.message.includes('Failed to fetch')) {
                 errorMessage += 'Could not connect to server. Please check if the server is running.';
             } else {
@@ -280,7 +293,7 @@ Please ensure your message follows our content guidelines:
         const selectedPrompts = suggestionPrompts
             .sort(() => 0.5 - Math.random())
             .slice(0, 3);
-        
+
         selectedPrompts.forEach(prompt => {
             const chip = document.createElement('div');
             chip.className = 'suggestion-chip';
@@ -302,7 +315,7 @@ Please ensure your message follows our content guidelines:
 
 // Spam filter patterns
 const SPAM_PATTERNS = {
-    
+
     profanity: /\b(fuck|shit|bitch|asshole|bastard|damn|crap|wanker|douche|slut|whore)\b/i,
     adultContent: /\b(anal|blowjob|deepthroat|nude|porn|xxx|sex|cumshot|dildo|orgasm|escort|fetish|milf|nsfw|boobs|tits|pussy|dick|cock|vagina|penis)\b/i,
     spamPhrases: /\b(free money|earn cash|work from home|win big|special offer|limited time|click here|subscribe now|discount)\b/i,
@@ -318,7 +331,7 @@ const SPAM_PATTERNS = {
 function checkSpam(message) {
     // Convert to lowercase for case-insensitive matching
     const lowerMessage = message.toLowerCase();
-    
+
     // Check each pattern
     for (const [type, pattern] of Object.entries(SPAM_PATTERNS)) {
         if (pattern.test(lowerMessage)) {

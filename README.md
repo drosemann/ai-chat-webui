@@ -59,7 +59,7 @@ Für den Rest: Cloud. Günstiger und schneller.
 - Responsive Design
 - Ollama API: `http://localhost:11434/api/generate`
 
-## Workspace-Backend (Phase 1)
+## Workspace-Backend (Phasen 1–2)
 
 Der Chat wird zu einem Workspace mit Benutzerkonten umgebaut. Die dafür
 benötigte selbst-gehostete Supabase-Infrastruktur liegt unter

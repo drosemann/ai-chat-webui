@@ -18,8 +18,29 @@ Delivered:
 - `supabase/README.md`: start, migrate, health-check, backup/restore, and
   production responsibilities.
 
-Still open after Phase 1:
+## Phase 2 — User accounts and authenticated API access
 
-- No application code uses Supabase yet.
-- The existing single-user browser chat and unauthenticated `/api/generate`
-  behavior are unchanged.
+Delivered:
+
+- `supabaseClient.js`: loads supabase-js as a version-pinned ESM module
+  (no bundler, no import map) and shares one client plus a session bridge
+  (`window.AppAuth`) with the rest of the app.
+- `auth.js`: sign-up (email, password, display name), sign-in, password
+  reset, profile bootstrap, and a session gate that hides the chat until a
+  session exists. No `index.html` changes were needed for this phase.
+- `server.js`: new `GET /config.json` (public URL + anon key only, no-store)
+  and `POST /api/generate` now requires a valid Supabase access token
+  (HS256 signature, expiry, authenticated role). Optional client-chosen
+  `model` names are accepted when they match a safe character pattern;
+  full history (`messages`) is accepted and composed into the Ollama prompt.
+- `app.js`: attaches the session token to every generate request.
+- `.env.example`: documents `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and the
+  server-only `SUPABASE_JWT_SECRET` (identical to the stack `JWT_SECRET`).
+
+Still open after Phase 2:
+
+- The old single-page chat UI is unchanged apart from the session gate; the
+  workspace shell, persistent conversations, projects, tasks, and dashboard
+  land in Phases 3–5.
+- No two-user RLS proof has been run yet (user asked for no test runs);
+  reviewers must run it before trusting multi-user data.
