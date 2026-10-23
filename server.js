@@ -106,6 +106,19 @@ app.post('/api/generate', async (req, res) => {
         if (!SAFE_MODEL_PATTERN.test(requestedModel)) {
             return res.status(400).json({ error: 'Invalid model name.' });
         }
+        // Availability check only: the model must be installed on the
+        // operator's Ollama. If Ollama is down here, the generate call below
+        // reports that; a failed tags lookup never blocks a valid request.
+        try {
+            const installed = await listOllamaModels();
+            if (installed.length > 0 && !installed.includes(requestedModel)) {
+                return res.status(400).json({
+                    error: `Model "${requestedModel}" is not installed on this Ollama server.`
+                });
+            }
+        } catch {
+            // Fall through to the generate call, which surfaces the outage.
+        }
 
         const history = Array.isArray(req.body.messages)
             ? req.body.messages.filter((m) => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string')
@@ -155,6 +168,36 @@ app.post('/api/generate', async (req, res) => {
         res.status(500).json({
             error: 'Failed to communicate with model API'
         });
+    }
+});
+
+let tagsCache = { at: 0, models: null };
+
+async function listOllamaModels() {
+    if (tagsCache.models && Date.now() - tagsCache.at < 60000) {
+        return tagsCache.models;
+    }
+    const base = OLLAMA_API_URL.replace(/\/api\/generate\/?$/, '');
+    const response = await fetch(`${base}/api/tags`);
+    if (!response.ok) {
+        throw new Error(`Ollama tags request failed: ${response.status}`);
+    }
+    const data = await response.json();
+    tagsCache = { at: Date.now(), models: (data.models || []).map((m) => m.name).filter(Boolean) };
+    return tagsCache.models;
+}
+
+app.get('/api/models', async (req, res) => {
+    const auth = verifySupabaseToken(req.headers.authorization);
+    if (!auth.ok) {
+        return res.status(auth.status).json({ error: auth.error });
+    }
+    try {
+        const models = await listOllamaModels();
+        res.json({ models, defaultModel: OLLAMA_DEFAULT_MODEL });
+    } catch (error) {
+        console.error('Ollama tags error:', error);
+        res.status(502).json({ error: 'Ollama is unreachable. Check OLLAMA_API_URL.' });
     }
 });
 

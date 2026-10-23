@@ -114,3 +114,29 @@ Delivered:
 Still open after Phase 5:
 
 - Memory, Models, and Settings views are placeholders.
+
+## Phase 6 — Memory, models, settings
+
+Delivered:
+
+- `memory.js`: user-authored notes CRUD with include-in-chat toggle. Chat
+  prepends enabled memories (newest 10, verbatim) to outgoing history;
+  nothing is extracted or ranked automatically.
+- `models.js` + `server.js GET /api/models`: installed Ollama models from
+  `/api/tags` (60s cache) with an explicit unreachable-Ollama error state.
+  The generate endpoint rejects model names not installed on the server
+  (availability check, never a quality judgment); failed tag lookups never
+  block generation.
+- `settings.js`: display-name edit, theme select (local + server synced both
+  ways), default-model select, client-side JSON export, `?demo=1` cleanup,
+  and "delete all my data" (typed DELETE confirmation, row-by-row through
+  RLS; Auth-user removal stays a documented operator step).
+- `bootstrap.js`: the unused `SYSTEM_PROMPT` constant is deleted (decision:
+  content filtering stays in the `checkSpam` patterns, unchanged), theme
+  toggle writes through to `user_settings`, server theme applies on chat
+  mount.
+
+Still open after Phase 6:
+
+- Operator hardening (reverse proxy, backups drill, RLS proof) and final
+  documentation.

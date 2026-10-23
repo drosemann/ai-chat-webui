@@ -8,6 +8,9 @@ import { escapeHtml, truncate, toast } from './utils.js';
 import { renderTasks } from './tasks.js';
 import { renderProjects } from './projects.js';
 import { renderHome, renderRail } from './home.js';
+import { renderMemory } from './memory.js';
+import { renderModels } from './models.js';
+import { renderSettings } from './settings.js';
 
 // Phase 3 loads the workspace stylesheet dynamically so index.html stays
 // untouched; the <link> will move into <head> in the Phase 8 cleanup.
@@ -201,11 +204,11 @@ export async function render() {
     } else if (view === 'tasks') {
       await renderTasks(views.tasks);
     } else if (view === 'memory') {
-      views.memory.innerHTML = placeholderView('Memory', 6, 'Notes the assistant should keep in mind.');
+      await renderMemory(views.memory);
     } else if (view === 'models') {
-      views.models.innerHTML = placeholderView('Models', 6, 'Ollama models installed on your machine.');
+      await renderModels(views.models);
     } else if (view === 'settings') {
-      views.settings.innerHTML = placeholderView('Settings', 6, 'Profile, theme, model defaults, and data export.');
+      await renderSettings(views.settings);
     }
   } catch (error) {
     console.error('View render failed:', error);

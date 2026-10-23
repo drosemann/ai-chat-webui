@@ -191,6 +191,7 @@ function clearMessages() {
 }
 
 async function mountChat(_root, { conversationId }) {
+    applyServerTheme().catch(() => {});
     if (suppressNextMount) {
         suppressNextMount = false;
         return;
@@ -244,10 +245,39 @@ async function mountChat(_root, { conversationId }) {
 }
 
 async function buildHistory(conversationId) {
-    const messages = await data.listMessages(conversationId, HISTORY_LIMIT);
-    // History is passed through as stored — the user's model choice decides
-    // what to do with it. No truncation policy beyond the fetch window.
-    return messages.map((m) => ({ role: m.role, content: m.content }));
+    const [messages, memories] = await Promise.all([
+        data.listMessages(conversationId, HISTORY_LIMIT),
+        data.listMemories().catch(() => [])
+    ]);
+    const history = messages.map((m) => ({ role: m.role, content: m.content }));
+    // User-authored context only: memories the user flagged for inclusion.
+    // Newest 10, sent as plain text the user wrote. No rewriting, no ranking.
+    const included = memories.filter((m) => m.include_in_chat).slice(0, 10);
+    if (included.length > 0) {
+        history.unshift({
+            role: 'user',
+            content: 'Notes I asked you to keep in mind:\n' + included.map((m) => `- ${m.text}`).join('\n')
+        });
+    }
+    return history;
+}
+
+let serverThemeApplied = false;
+
+async function applyServerTheme() {
+    if (serverThemeApplied) return;
+    serverThemeApplied = true;
+    try {
+        const settings = await data.getSettings();
+        if (settings?.theme && settings.theme !== localStorage.getItem('theme')) {
+            document.documentElement.setAttribute('data-theme', settings.theme);
+            localStorage.setItem('theme', settings.theme);
+            const modeText = document.querySelector('#theme-toggle .mode-text');
+            if (modeText) modeText.textContent = settings.theme === 'dark' ? 'Light Mode' : 'Dark Mode';
+        }
+    } catch {
+        // Offline or fresh account: local theme stands.
+    }
 }
 
 async function sendMessage() {
@@ -393,6 +423,7 @@ function initTheme() {
         document.documentElement.setAttribute('data-theme', newTheme);
         localStorage.setItem('theme', newTheme);
         if (modeText) modeText.textContent = newTheme === 'dark' ? 'Light Mode' : 'Dark Mode';
+        data.updateSettings({ theme: newTheme }).catch(() => {});
     });
 }
 
