@@ -98,7 +98,7 @@ Im UI (Settings): Anzeigename, Theme, Standard-Modell, Datenexport, Demo-Daten b
 
 ## Lizenz
 
-GNU GPLv3 – siehe [LICENSE](LICENSE).
+Ab 24.10.2026 MIT License – siehe [LICENSE](LICENSE). Ältere Stände standen unter GNU GPLv3.
 
 ## Related
 
